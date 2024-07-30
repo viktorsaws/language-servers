@@ -16,18 +16,18 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - name: configure aws credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                  role-to-assume: arn:aws:iam::448223805965:role/GithubNpmPublishAction
-                  role-session-name: language-servers-github
-                  aws-region: us-east-1
-            - name: Get npm access token
-              uses: aws-actions/aws-secretsmanager-get-secrets@v2
-              with:
-                  secret-ids: |
-                      npmjs/github_automation
-                  parse-json-secrets: true
+            # - name: configure aws credentials
+            #   uses: aws-actions/configure-aws-credentials@v4
+            #   with:
+            #       role-to-assume: arn:aws:iam::448223805965:role/GithubNpmPublishAction
+            #       role-session-name: language-servers-github
+            #       aws-region: us-east-1
+            # - name: Get npm access token
+            #   uses: aws-actions/aws-secretsmanager-get-secrets@v2
+            #   with:
+            #       secret-ids: |
+            #           npmjs/github_automation
+            #       parse-json-secrets: true
             # Setup .npmrc file to publish to npm
             - uses: actions/setup-node@v4
               with:
