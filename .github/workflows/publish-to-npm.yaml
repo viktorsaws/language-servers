@@ -9,7 +9,7 @@ on:
 
 permissions:
     id-token: write # This is required for requesting the JWT
-    contents: read # This is required for actions/checkout
+    contents: write # This is required for actions/checkout
 
 jobs:
     publish:
@@ -36,6 +36,13 @@ jobs:
                   scope: '@aws'
             - run: npm ci
             - run: npm run compile
-            - run: npm publish --workspace ${{ inputs.workspace }}
-              env:
-                  NODE_AUTH_TOKEN: ${{ env.NPMJS_GITHUB_AUTOMATION_TOKEN }}
+            - run: npm run package --workspace app/aws-lsp-codewhisperer-runtimes
+            # - run: npm publish --workspace ${{ inputs.workspace }}
+            #   env:
+            #       NODE_AUTH_TOKEN: ${{ env.NPMJS_GITHUB_AUTOMATION_TOKEN }}
+            - name: Upload binaries to release
+              uses: svenstaro/upload-release-action@v2
+              with:
+                  file_glob: true
+                  file: app/aws-lsp-codewhisperer-runtimes/build/*
+                  tag: ${{ github.ref }}
