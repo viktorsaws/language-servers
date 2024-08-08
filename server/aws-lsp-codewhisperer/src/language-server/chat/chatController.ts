@@ -72,6 +72,9 @@ export class ChatController implements ChatHandlers {
         })
 
         const triggerContext = await this.#getTriggerContext(params, metric)
+
+        this.#log('Got trigger context: ', JSON.stringify(triggerContext))
+
         const isNewConversation = !session.sessionId
 
         token.onCancellationRequested(() => {
@@ -87,6 +90,9 @@ export class ChatController implements ChatHandlers {
             const requestInput = this.#triggerContext.getChatParamsFromTrigger(params, triggerContext)
 
             metric.recordStart()
+
+            this.#log('Request input used: ', JSON.stringify(requestInput))
+
             response = await session.generateAssistantResponse(requestInput)
             this.#log('Response for conversationId:', conversationIdentifier, JSON.stringify(response.$metadata))
         } catch (err) {

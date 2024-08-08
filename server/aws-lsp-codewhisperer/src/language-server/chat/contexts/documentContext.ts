@@ -71,8 +71,24 @@ export class DocumentContextExtractor {
             )
         }
 
+        // this.#logger?.log("Extracted context: " + JSON.stringify({
+        //     cursorState: Boolean(rangeWithinCodeBlock),
+        //     text: document.getText(codeBlockRange),
+        //     programmingLanguage: languageId,
+        //     relativeFilePath: document.uri,
+        //     documentSymbols,
+        //     hasCodeSnippet: Boolean(rangeWithinCodeBlock),
+        //     totalEditorCharacters: document.getText().length,
+        // }))
+
         return {
-            cursorState: rangeWithinCodeBlock ? { range: rangeWithinCodeBlock } : undefined,
+            // Use only position if it was passed by client
+            cursorState:
+                'position' in cursorState
+                    ? cursorState
+                    : rangeWithinCodeBlock
+                      ? { range: rangeWithinCodeBlock }
+                      : undefined,
             text: document.getText(codeBlockRange),
             programmingLanguage: languageId ? { languageName: languageId } : undefined,
             relativeFilePath: document.uri,

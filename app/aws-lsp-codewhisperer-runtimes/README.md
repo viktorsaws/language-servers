@@ -24,3 +24,8 @@ or
 ```bash
 node ./out/iam-standalone.js --stdio
 ```
+
+To rebuild Amazon Q server and runtime with one command, run from the monorepo root:
+```bash
+npm run compile --w server/aws-lsp-codewhisperer --w app/aws-lsp-codewhisperer-runtimes && npm run package -w app/aws-lsp-codewhisperer-runtimes
+```
