@@ -1,7 +1,11 @@
 {
     "extends": "../../tsconfig.packages.json",
     "compilerOptions": {
-        "rootDir": "./src",
+        "rootDirs": [
+            "./src",
+            "../../node_modules/@aws/language-server-runtimes-types",
+            "../../node_modules/@aws/language-server-runtimes"
+        ],
         "outDir": "./out"
     },
     "include": ["src"]

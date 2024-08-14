@@ -3,3 +3,5 @@ export * from './language-server/codeWhispererServer'
 export * from './language-server/qChatServer'
 export * from './language-server/proxy-server'
 export * from './language-server/netTransformServer'
+
+// Implement Person class

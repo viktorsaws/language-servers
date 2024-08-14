@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "copyfiles": "^2.4.1",
+        "@amzn/sso-auth-server-poc": "*",
         "@aws/language-server-runtimes": "^0.2.8",
         "@aws/lsp-codewhisperer": "*"
     },

@@ -6,6 +6,7 @@ import {
     QChatServerProxy,
     QNetTransformServerTokenProxy,
 } from '@aws/lsp-codewhisperer/out/language-server/proxy-server'
+import { SsoAuthServer } from '@amzn/sso-auth-server-poc'
 
 const MAJOR = 0
 const MINOR = 1
@@ -19,6 +20,7 @@ const props: RuntimeProps = {
         CodeWhispererSecurityScanServerTokenProxy,
         QNetTransformServerTokenProxy,
         QChatServerProxy,
+        SsoAuthServer,
     ],
     name: 'AWS CodeWhisperer',
 }
