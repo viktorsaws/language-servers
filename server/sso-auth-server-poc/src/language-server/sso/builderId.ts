@@ -200,11 +200,8 @@ export class OidcClient {
  *         - RefreshToken (optional)
  */
 export class SsoAccessTokenProvider {
-    private static readonly TOKEN_CACHE_FILE = path.join(TOKEN_CACHE_DIR, 'token.json')
-    private static readonly REGISTRATION_CACHE_FILE = path.join(TOKEN_CACHE_DIR, 'registration.json')
-
-    private cachedToken: SsoAccess | undefined
-    private cachedRegistration: ClientRegistration | undefined
+    private readonly TOKEN_CACHE_FILE = path.join(TOKEN_CACHE_DIR, 'token.json')
+    private readonly REGISTRATION_CACHE_FILE = path.join(TOKEN_CACHE_DIR, 'registration.json')
 
     public constructor(
         private readonly profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
@@ -213,12 +210,12 @@ export class SsoAccessTokenProvider {
     ) {}
 
     public async invalidate(): Promise<void> {
-        this.cachedToken = undefined
-        this.cachedRegistration = undefined
+        await fs.promises.unlink(this.TOKEN_CACHE_FILE)
+        await fs.promises.unlink(this.REGISTRATION_CACHE_FILE)
     }
 
     public async getToken(): Promise<SsoToken | undefined> {
-        const data = this.cachedToken
+        const data = await this.loadCachedToken()
 
         if (!data || !isExpired(data.token)) {
             return data?.token
@@ -233,20 +230,55 @@ export class SsoAccessTokenProvider {
         }
     }
 
+    private async loadCachedToken(): Promise<SsoAccess | undefined> {
+        try {
+            const tokenData = await fs.promises.readFile(this.TOKEN_CACHE_FILE, 'utf8')
+
+            const parsedToken = JSON.parse(tokenData)
+            parsedToken.token.expiresAt = new Date(parsedToken.token.expiresAt)
+
+            return parsedToken
+        } catch (err) {
+            // Todo: handle errors
+        }
+    }
+
+    private async loadCachedRegistrationData(): Promise<ClientRegistration | undefined> {
+        try {
+            const registrationData = await fs.promises.readFile(this.REGISTRATION_CACHE_FILE, 'utf8')
+
+            return JSON.parse(registrationData)
+        } catch (err) {
+            // Todo: handle errors
+        }
+    }
+
+    private async saveCachedToken(data: SsoAccess): Promise<void> {
+        await fs.promises.mkdir(TOKEN_CACHE_DIR, { recursive: true })
+        await fs.promises.writeFile(this.TOKEN_CACHE_FILE, JSON.stringify(data))
+    }
+
+    private async saveRegisrationData(data: ClientRegistration): Promise<void> {
+        await fs.promises.mkdir(TOKEN_CACHE_DIR, { recursive: true })
+        await fs.promises.writeFile(this.REGISTRATION_CACHE_FILE, JSON.stringify(data))
+    }
+
     public async createToken(): Promise<SsoToken> {
         const access = await this.runFlow()
         const identity = this.tokenCacheKey
-        this.cachedToken = access
+        await this.saveCachedToken(access)
 
         return { ...access.token, identity }
     }
 
     private async runFlow() {
-        if (this.cachedRegistration === undefined) {
-            this.cachedRegistration = await this.registerClient()
+        let cachedRegistration = await this.loadCachedRegistrationData()
+        if (cachedRegistration === undefined) {
+            cachedRegistration = await this.registerClient()
+            await this.saveRegisrationData(cachedRegistration)
         }
 
-        return await this.authorize(this.cachedRegistration)
+        return await this.authorize(cachedRegistration)
     }
 
     private async refreshToken(token: RequiredProps<SsoToken, 'refreshToken'>, registration: ClientRegistration) {
@@ -254,7 +286,7 @@ export class SsoAccessTokenProvider {
             const clientInfo = selectFrom(registration, 'clientId', 'clientSecret')
             const response = await this.oidc.createToken({ ...clientInfo, ...token, grantType: refreshGrantType })
             const refreshed = this.formatToken(response as SsoToken, registration)
-            this.cachedToken = refreshed
+            await this.saveCachedToken(refreshed)
 
             return refreshed
         } catch (err) {
