@@ -72,7 +72,7 @@ export class DocumentContextExtractor {
         }
 
         // this.#logger?.log("Extracted context: " + JSON.stringify({
-        //     cursorState: Boolean(rangeWithinCodeBlock),
+        //     cursorState: rangeWithinCodeBlock ? { range: rangeWithinCodeBlock } : undefined,
         //     text: document.getText(codeBlockRange),
         //     programmingLanguage: languageId,
         //     relativeFilePath: document.uri,

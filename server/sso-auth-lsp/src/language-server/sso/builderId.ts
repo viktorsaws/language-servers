@@ -236,6 +236,7 @@ export class SsoAccessTokenProvider {
 
             const parsedToken = JSON.parse(tokenData)
             parsedToken.token.expiresAt = new Date(parsedToken.token.expiresAt)
+            parsedToken.registration.expiresAt = new Date(parsedToken.registration.expiresAt)
 
             return parsedToken
         } catch (err) {
@@ -246,6 +247,9 @@ export class SsoAccessTokenProvider {
     private async loadCachedRegistrationData(): Promise<ClientRegistration | undefined> {
         try {
             const registrationData = await fs.promises.readFile(this.REGISTRATION_CACHE_FILE, 'utf8')
+
+            const parsedData = JSON.parse(registrationData)
+            parsedData.token.expiresAt = new Date(parsedData.expiresAt)
 
             return JSON.parse(registrationData)
         } catch (err) {

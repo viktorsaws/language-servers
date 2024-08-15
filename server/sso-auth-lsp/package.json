@@ -1,7 +1,7 @@
 {
-    "name": "@amzn/sso-auth-server-poc",
+    "name": "@amzn/sso-auth-lsp",
     "version": "0.0.1",
-    "description": "BuilderId SSO flow LSP Server",
+    "description": "Device SSO Authentication flow over LSP Server",
     "main": "out/index.js",
     "scripts": {
         "compile": "tsc --build"

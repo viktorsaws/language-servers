@@ -67,46 +67,6 @@ export interface SsoProfile {
     readonly identifier?: string
 }
 
-export const builderIdStartUrl = 'https://view.awsapps.com/start'
-
-// export async function openSsoPortalLink(
-//     startUrl: string,
-//     authorization: { readonly verificationUri: string; readonly userCode: string }
-// ): Promise<boolean> {
-//     // async function copyCodeAndOpenLink() {
-//     //     await vscode.env.clipboard.writeText(authorization.userCode).then(undefined, err => {
-//     //         // getLogger().warn(`auth: failed to copy user code "${authorization.userCode}" to clipboard: %s`, err)
-//     //     })
-
-//     //     return vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUri))
-//     // }
-
-//     async function showLoginNotification() {
-//         const name = startUrl === builderIdStartUrl ? 'builderId' : 'foo'
-//         const title = `Copy Code for ${name}`
-//         const detail = `To proceed, open the login page and provide this code to confirm the access request: ${authorization.userCode}`
-
-//         const copyCode = 'Copy Code and Proceed'
-
-//         return true
-//         // const options = { modal: true, detail } as vscode.MessageOptions
-
-//         // while (true) {
-//         //     // TODO: add the 'Help' item back once we have a suitable URL
-//         //     // const resp = await vscode.window.showInformationMessage(title, options, copyCode, localizedText.help)
-//         //     const resp = await vscode.window.showInformationMessage(title, options, copyCode)
-//         //     switch (resp) {
-//         //         case copyCode:
-//         //             return copyCodeAndOpenLink()
-//         //         default:
-//         //             throw new Error('user cancelled')
-//         //     }
-//         // }
-//     }
-
-//     return showLoginNotification()
-// }
-
 // Most SSO 'expirables' are fairly long lived, so a one minute buffer is plenty.
 const expirationBufferMs = 60000
 export function isExpired(expirable: { expiresAt: Date }): boolean {

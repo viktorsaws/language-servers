@@ -10,7 +10,7 @@ import {
 import { CancellationToken, ExecuteCommandParams } from 'vscode-languageserver/node'
 import { BuilderIdConnectionBuilder, SsoConnection } from './sso/builderId'
 
-const AUTH_DEVICE_COMMAND = '/ssoAuth/authDevice/getToken'
+const AUTH_DEVICE_COMMAND = 'ssoAuth/authDevice/getToken'
 
 export const SsoAuthServer: Server = (features: {
     credentialsProvider: CredentialsProvider
