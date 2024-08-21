@@ -6,6 +6,7 @@ import {
     QChatServerProxy,
     QNetTransformServerTokenProxy,
 } from '@aws/lsp-codewhisperer/out/language-server/proxy-server'
+import { SsoAuthServer } from '@amzn/device-sso-auth-lsp'
 
 const MAJOR = 0
 const MINOR = 1
@@ -15,6 +16,7 @@ const VERSION = `${MAJOR}.${MINOR}.${PATCH}`
 const props: RuntimeProps = {
     version: VERSION,
     servers: [
+        SsoAuthServer,
         CodeWhispererServerTokenProxy,
         CodeWhispererSecurityScanServerTokenProxy,
         QNetTransformServerTokenProxy,
