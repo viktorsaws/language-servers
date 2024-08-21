@@ -118,6 +118,7 @@ export class CodeWhispererServiceToken extends CodeWhispererServiceBase {
         const options: CodeWhispererTokenClientConfigurationOptions = {
             region: this.codeWhispererRegion,
             endpoint: this.codeWhispererEndpoint,
+            customUserAgent: 'Amazon Q Language Server/NeoVim Plugin Preview',
             onRequestSetup: [
                 req => {
                     req.on('build', ({ httpRequest }) => {
