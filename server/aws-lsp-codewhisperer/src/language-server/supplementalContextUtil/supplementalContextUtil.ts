@@ -3,34 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Port of implementation in AWS Toolkit for VSCode
-// https://github.com/aws/aws-toolkit-vscode/blob/9d8ddbd85f4533e539a58e76f7c46883d8e50a79/packages/core/src/codewhisperer/util/supplementalContext/supplementalContextUtil.ts
-
+import { fetchSupplementalContextForTest } from './utgUtils'
 import { fetchSupplementalContextForSrc } from './crossFileContextUtil'
 import { isTestFile } from './codeParsingUtil'
-import { CodeWhispererSupplementalContext } from '../models/model'
-import {
-    CancellationToken,
-    Logging,
-    Position,
-    TextDocument,
-    Workspace,
-} from '@aws/language-server-runtimes/server-interface'
-
-export class CancellationError extends Error {}
+import * as vscode from 'vscode'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../../../shared/errors'
+import { getLogger } from '../../../shared/logger/logger'
+import { CodeWhispererSupplementalContext } from '../../models/model'
 
 export async function fetchSupplementalContext(
-    document: TextDocument,
-    position: Position,
-    workspace: Workspace,
-    logging: Logging,
-    cancellationToken: CancellationToken
+    editor: vscode.TextEditor,
+    cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContext | undefined> {
     const timesBeforeFetching = performance.now()
 
-    const isUtg = await isTestFile(document.uri, {
-        languageId: document.languageId,
-        fileContent: document.getText(),
+    const isUtg = await isTestFile(editor.document.uri.fsPath, {
+        languageId: editor.document.languageId,
+        fileContent: editor.document.getText(),
     })
 
     let supplementalContextPromise: Promise<
@@ -38,16 +28,9 @@ export async function fetchSupplementalContext(
     >
 
     if (isUtg) {
-        // Not implemented.
-        return
+        supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
     } else {
-        supplementalContextPromise = fetchSupplementalContextForSrc(
-            document,
-            position,
-            workspace,
-            logging,
-            cancellationToken
-        )
+        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)
     }
 
     return supplementalContextPromise
@@ -66,7 +49,7 @@ export async function fetchSupplementalContext(
             }
         })
         .catch(err => {
-            if (err instanceof CancellationError) {
+            if (err instanceof ToolkitError && err.cause instanceof CancellationError) {
                 return {
                     isUtg: isUtg,
                     isProcessTimeout: true,
@@ -76,7 +59,9 @@ export async function fetchSupplementalContext(
                     strategy: 'Empty',
                 }
             } else {
-                logging.log(`Fail to fetch supplemental context for target file ${document.uri}: ${err}`)
+                getLogger().error(
+                    `Fail to fetch supplemental context for target file ${editor.document.fileName}: ${err}`
+                )
                 return undefined
             }
         })

@@ -3,12 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// Port of implementation in AWS Toolkit for VSCode
-// https://github.com/aws/aws-toolkit-vscode/blob/9d8ddbd85f4533e539a58e76f7c46883d8e50a79/packages/core/src/codewhisperer/util/supplementalContext/codeParsingUtil.ts
-
+import * as vscode from 'vscode'
 import path = require('path')
-import { normalize } from '../pathUtils'
-import { TextDocument } from '@aws/language-server-runtimes/server-interface'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 export interface utgLanguageConfig {
     extension: string
@@ -69,13 +66,13 @@ export function countSubstringMatches(arr1: string[], arr2: string[]): number {
     return count
 }
 
-export function isTestFile(
+export async function isTestFile(
     filePath: string,
     languageConfig: {
-        languageId: TextDocument['languageId']
+        languageId: vscode.TextDocument['languageId']
         fileContent?: string
     }
-): boolean {
+): Promise<boolean> {
     const normalizedFilePath = normalize(filePath)
     const pathContainsTest =
         normalizedFilePath.includes('tests/') ||
@@ -90,7 +87,7 @@ export function isTestFile(
     return false
 }
 
-function isTestFileByName(filePath: string, language: TextDocument['languageId']): boolean {
+function isTestFileByName(filePath: string, language: vscode.TextDocument['languageId']): boolean {
     const languageConfig = utgLanguageConfigs[language]
     if (!languageConfig) {
         // We have enabled the support only for python and Java for this check
