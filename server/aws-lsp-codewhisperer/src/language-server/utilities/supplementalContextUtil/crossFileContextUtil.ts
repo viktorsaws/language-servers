@@ -1,21 +1,21 @@
-// Port of implementation in AWS Toolkit for VSCode
-// https://github.com/aws/aws-toolkit-vscode/blob/9d8ddbd85f4533e539a58e76f7c46883d8e50a79/packages/core/src/codewhisperer/util/supplementalContext/crossFileContextUtil.ts
-// Implementation is converted to work with LSP TextDocument instead of vscode APIs.
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-import * as path from 'path'
+import * as vscode from 'vscode'
+import { fs } from '../../../shared'
+import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
-import { crossFileContextConfig } from '../../models/constants'
+import { ToolkitError } from '../../../shared/errors'
+import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
-import { getFileDistance } from '../filesystemUtilities'
+import { getFileDistance } from '../../../shared/filesystemUtilities'
+import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
-import {
-    CancellationToken,
-    Position,
-    TextDocument,
-    Workspace,
-    Range,
-} from '@aws/language-server-runtimes/server-interface'
-import { CancellationError } from './supplementalContextUtil'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -28,7 +28,7 @@ type CrossFileSupportedLanguage =
 // TODO: ugly, can we make it prettier? like we have to manually type 'java', 'javascriptreact' which is error prone
 // TODO: Move to another config file or constants file
 // Supported language to its corresponding file ext
-export const supportedLanguageToDialects: Readonly<Record<CrossFileSupportedLanguage, Set<string>>> = {
+const supportedLanguageToDialects: Readonly<Record<CrossFileSupportedLanguage, Set<string>>> = {
     java: new Set<string>(['.java']),
     python: new Set<string>(['.py']),
     javascript: new Set<string>(['.js', '.jsx']),
@@ -49,12 +49,13 @@ interface Chunk {
 }
 
 export async function fetchSupplementalContextForSrc(
-    document: TextDocument,
-    position: Position,
-    workspace: Workspace,
-    cancellationToken: CancellationToken
+    editor: vscode.TextEditor,
+    cancellationToken: vscode.CancellationToken
 ): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
-    const shouldProceed = shouldFetchCrossFileContext(document.languageId)
+    const shouldProceed = shouldFetchCrossFileContext(
+        editor.document.languageId,
+        CodeWhispererUserGroupSettings.instance.userGroup
+    )
 
     if (!shouldProceed) {
         return shouldProceed === undefined
@@ -68,17 +69,16 @@ export async function fetchSupplementalContextForSrc(
     const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 
     // Step 1: Get relevant cross files to refer
-    const relevantCrossFileCandidates = await getCrossFileCandidates(document, workspace)
-
+    const relevantCrossFilePaths = await getCrossFileCandidates(editor)
     throwIfCancelled(cancellationToken)
 
     // Step 2: Split files to chunks with upper bound on chunkCount
     // We restrict the total number of chunks to improve on latency.
     // Chunk linking is required as we want to pass the next chunk value for matched chunk.
     let chunkList: Chunk[] = []
-    for (const relevantFile of relevantCrossFileCandidates) {
+    for (const relevantFile of relevantCrossFilePaths) {
         throwIfCancelled(cancellationToken)
-        const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
+        const chunks: Chunk[] = await splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
         if (chunkList.length >= codeChunksCalculated) {
@@ -91,7 +91,7 @@ export async function fetchSupplementalContextForSrc(
 
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
-    const inputChunk: Chunk = getInputChunk(document, position, crossFileContextConfig.numberOfLinesEachChunk)
+    const inputChunk: Chunk = getInputChunk(editor, crossFileContextConfig.numberOfLinesEachChunk)
     const bestChunks: Chunk[] = findBestKChunkMatches(inputChunk, chunkList, crossFileContextConfig.topK)
     throwIfCancelled(cancellationToken)
 
@@ -108,6 +108,7 @@ export async function fetchSupplementalContextForSrc(
     }
 
     // DO NOT send code chunk with empty content
+    getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
     return {
         supplementalContextItems: supplementalContexts.filter(item => item.content.trim().length !== 0),
         strategy: 'OpenTabs_BM25',
@@ -136,27 +137,28 @@ function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: n
 /* This extract 10 lines to the left of the cursor from trigger file.
  * This will be the inputquery to bm25 matching against list of cross-file chunks
  */
-function getInputChunk(document: TextDocument, cursorPosition: Position, chunkSize: number) {
+function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
+    const cursorPosition = editor.selection.active
     const startLine = Math.max(cursorPosition.line - chunkSize, 0)
     const endLine = Math.max(cursorPosition.line - 1, 0)
-    const endCharacter = document.getText(Range.create(endLine, 0, endLine + 1, 0)).trimRight().length
-    const inputChunkContent = document
-        .getText(Range.create(startLine, 0, endLine, endCharacter))
-        .replaceAll('\r\n', '\n')
-    const inputChunk: Chunk = { fileName: path.basename(document.uri), content: inputChunkContent, nextContent: '' }
+    const inputChunkContent = editor.document.getText(
+        new vscode.Range(startLine, 0, endLine, editor.document.lineAt(endLine).text.length)
+    )
+    const inputChunk: Chunk = { fileName: editor.document.fileName, content: inputChunkContent, nextContent: '' }
     return inputChunk
 }
 
 /**
- * Note: UserGroup is not used in VsCode implementation, keeping param for reference, but not implemented.
- *
  * Util to decide if we need to fetch crossfile context since CodeWhisperer CrossFile Context feature is gated by userGroup and language level
- * @param languageId: LSP TextDocument language Identifier
+ * @param languageId: VSCode language Identifier
  * @param userGroup: CodeWhisperer user group settings, refer to userGroupUtil.ts
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(languageId: TextDocument['languageId'], _userGroup?: any): boolean | undefined {
+function shouldFetchCrossFileContext(
+    languageId: vscode.TextDocument['languageId'],
+    userGroup: UserGroup
+): boolean | undefined {
     if (!isCrossFileSupported(languageId)) {
         return undefined
     }
@@ -194,32 +196,27 @@ function linkChunks(chunks: Chunk[]) {
     return updatedChunks
 }
 
-export function splitFileToChunks(document: TextDocument, chunkSize: number): Chunk[] {
+export async function splitFileToChunks(filePath: string, chunkSize: number): Promise<Chunk[]> {
     const chunks: Chunk[] = []
 
-    const fileContent = document.getText().trimEnd().replaceAll('\r\n', '\n')
+    const fileContent = (await fs.readFileAsString(filePath)).trimEnd()
     const lines = fileContent.split('\n')
 
     for (let i = 0; i < lines.length; i += chunkSize) {
         const chunkContent = lines.slice(i, Math.min(i + chunkSize, lines.length)).join('\n')
-        const chunk = { fileName: new URL(document.uri).pathname, content: chunkContent.trimEnd(), nextContent: '' }
+        const chunk = { fileName: filePath, content: chunkContent.trimEnd(), nextContent: '' }
         chunks.push(chunk)
     }
     return chunks
-}
-
-type FileDistance = {
-    file: TextDocument
-    fileDistance: number
 }
 
 /**
  * This function will return relevant cross files sorted by file distance for the given editor file
  * by referencing open files, imported files and same package files.
  */
-export async function getCrossFileCandidates(document: TextDocument, workspace: Workspace): Promise<TextDocument[]> {
-    const targetFile = document.uri
-    const language = document.languageId as CrossFileSupportedLanguage
+export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string[]> {
+    const targetFile = editor.document.uri.fsPath
+    const language = editor.document.languageId as CrossFileSupportedLanguage
     const dialects = supportedLanguageToDialects[language]
 
     /**
@@ -227,37 +224,33 @@ export async function getCrossFileCandidates(document: TextDocument, workspace: 
      * 1. is different from the target
      * 2. has the same file extension or it's one of the dialect of target file (e.g .js vs. .jsx)
      * 3. is not a test file
-     *
-     * Porting note: this function relies of Workspace feature to get all documents,
-     * managed by this language server, instead of VSCode `vscode.window` API as VSCode toolkit does.
      */
-    const unsortedCandidates = await workspace.getAllTextDocuments()
+    const unsortedCandidates = await getOpenFilesInWindow(async candidateFile => {
+        return (
+            targetFile !== candidateFile &&
+            (path.extname(targetFile) === path.extname(candidateFile) ||
+                (dialects && dialects.has(path.extname(candidateFile)))) &&
+            !(await isTestFile(candidateFile, { languageId: language }))
+        )
+    })
+
     return unsortedCandidates
-        .filter((candidateFile: TextDocument) => {
-            return !!(
-                targetFile !== candidateFile.uri &&
-                (path.extname(targetFile) === path.extname(candidateFile.uri) ||
-                    (dialects && dialects.has(path.extname(candidateFile.uri)))) &&
-                !isTestFile(new URL(candidateFile.uri).pathname, { languageId: language })
-            )
-        })
-        .map((candidate: TextDocument): FileDistance => {
+        .map(candidate => {
             return {
                 file: candidate,
-                // PORT_TODO: port and test getFileDistance to work with LSP's URIs
-                fileDistance: getFileDistance(targetFile, candidate.uri),
+                fileDistance: getFileDistance(targetFile, candidate),
             }
         })
-        .sort((file1: FileDistance, file2: FileDistance) => {
+        .sort((file1, file2) => {
             return file1.fileDistance - file2.fileDistance
         })
-        .map((fileToDistance: FileDistance) => {
+        .map(fileToDistance => {
             return fileToDistance.file
         })
 }
 
-function throwIfCancelled(token: CancellationToken): void | never {
+function throwIfCancelled(token: vscode.CancellationToken): void | never {
     if (token.isCancellationRequested) {
-        throw new CancellationError()
+        throw new ToolkitError(supplemetalContextFetchingTimeoutMsg, { cause: new CancellationError('timeout') })
     }
 }
