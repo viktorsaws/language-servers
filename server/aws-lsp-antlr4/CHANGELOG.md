@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.12](https://github.com/viktorsaws/language-servers/compare/lsp-antlr4/v0.1.11...lsp-antlr4/v0.1.12) (2025-06-13)
+
+
+### Features
+
+* adding mcp servers feature to the language-server ([#1544](https://github.com/viktorsaws/language-servers/issues/1544)) ([f37bf5f](https://github.com/viktorsaws/language-servers/commit/f37bf5f91921d7611c124de6d54dd6ec653038c6))
+* workspace open settings ([#1055](https://github.com/viktorsaws/language-servers/issues/1055)) ([f3018da](https://github.com/viktorsaws/language-servers/commit/f3018da706663b0f64bc5b4becc2fd600d5ff5b6))
+
+
+### Bug Fixes
+
+* **amazonq:** Use common utility to determine workspaceFolders and fix tests ([#1353](https://github.com/viktorsaws/language-servers/issues/1353)) ([483f532](https://github.com/viktorsaws/language-servers/commit/483f532b940d3ff2e914c0824f7501c3fe6a6235))
+* bump runtimes and fix broken test ([#1323](https://github.com/viktorsaws/language-servers/issues/1323)) ([7d1a7b9](https://github.com/viktorsaws/language-servers/commit/7d1a7b9700ee2cc154dfe357ebbb62597d3f1582))
+* ensure local index server updates with workspaceChangeEvent and bump runtimes ([#1424](https://github.com/viktorsaws/language-servers/issues/1424)) ([9babbb6](https://github.com/viktorsaws/language-servers/commit/9babbb643daa2893454dbc977d3802822b2c0aa6))
+* onFileClick logic is crashing the whole process if no workspace is open ([#1119](https://github.com/viktorsaws/language-servers/issues/1119)) ([0211223](https://github.com/viktorsaws/language-servers/commit/0211223a93dd3ddcb5b7b06882e2a10eb09fa01c))
+* update versions manually (release-please bug) ([f7ac957](https://github.com/viktorsaws/language-servers/commit/f7ac9576882af227e6b863ece457194526a85f88))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @aws/lsp-core bumped from ^0.0.9 to ^0.0.10
+
 ## [0.1.11](https://github.com/aws/language-servers/compare/lsp-antlr4/v0.1.10...lsp-antlr4/v0.1.11) (2025-06-10)
 
 
