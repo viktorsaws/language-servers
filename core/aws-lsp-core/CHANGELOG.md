@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.0.15](https://github.com/viktorsaws/language-servers/compare/lsp-core/v0.0.14...lsp-core/v0.0.15) (2025-08-22)
+
+
+### Features
+
+* **amazonq:** added mcp admin level configuration with GetProfile ([#2000](https://github.com/viktorsaws/language-servers/issues/2000)) ([fd6e9a8](https://github.com/viktorsaws/language-servers/commit/fd6e9a829c6229c276de5340dffce52b426a864d))
+
+
+### Bug Fixes
+
+* add proper encoding support for shell output ([#1903](https://github.com/viktorsaws/language-servers/issues/1903)) ([44a6d62](https://github.com/viktorsaws/language-servers/commit/44a6d629af7702662a02f384a6a542c0d72ccc39))
+* **amazonq:** add handling for relative paths for isInWorkspace ([#1801](https://github.com/viktorsaws/language-servers/issues/1801)) ([3c273a7](https://github.com/viktorsaws/language-servers/commit/3c273a7aeac88a7afe40abaf490bc0950e517c01))
+* **amazonq:** Use common utility to determine workspaceFolders and fix tests ([#1353](https://github.com/viktorsaws/language-servers/issues/1353)) ([483f532](https://github.com/viktorsaws/language-servers/commit/483f532b940d3ff2e914c0824f7501c3fe6a6235))
+* **amazonq:** workspace files being tagged as out of workspace issue ([#1726](https://github.com/viktorsaws/language-servers/issues/1726)) ([4bd9aea](https://github.com/viktorsaws/language-servers/commit/4bd9aeab439d15dc425634b14470fd3c67986c4a))
+* update fileSearch toolSpec and implementation ([#1320](https://github.com/viktorsaws/language-servers/issues/1320)) ([4b18f25](https://github.com/viktorsaws/language-servers/commit/4b18f25dfb8595f18b2773dddaa5bfbc64cf519d))
+* use document change events for auto trigger classifier input ([#1912](https://github.com/viktorsaws/language-servers/issues/1912)) ([2204da6](https://github.com/viktorsaws/language-servers/commit/2204da6193f2030ee546f61c969b1a664d8025e3))
+* Use file context override in the inline completion params for Jupyter Notebook ([#2114](https://github.com/viktorsaws/language-servers/issues/2114)) ([91c8398](https://github.com/viktorsaws/language-servers/commit/91c839857f8aa4d79098189f9fb620b361c51289))
+* use new language server runtime ([#2023](https://github.com/viktorsaws/language-servers/issues/2023)) ([83ea1e4](https://github.com/viktorsaws/language-servers/commit/83ea1e42fe52990696eb9b878fa11e2c5331bec5))
+
 ## [0.0.14](https://github.com/aws/language-servers/compare/lsp-core/v0.0.13...lsp-core/v0.0.14) (2025-08-19)
 
 
